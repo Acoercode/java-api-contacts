@@ -1,8 +1,12 @@
-{
-  "name": "semantic-release",
+ {
+  "name": "circleci",
   "version": "1.0.0",
   "description": "The project has a simple Java project structure with the following packages (in **src/main/java**)",
   "main": "commitlint.config.js",
+  "release": {
+    "branches": ["test/semantic-release"]
+  },
+   
   "husky": {
     "hooks": {
       "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
@@ -33,3 +37,4 @@
     "access": "public"
   }
 }
+
