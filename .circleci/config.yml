@@ -1,130 +1,66 @@
-# This code is licensed from CircleCI to the user under the MIT license.
-# See here for details: https://circleci.com/developer/orbs/licensing
 version: 2.1
-
-description: Use Semantic Release in your project
-
-executors:
-  semantic-release:
-    docker:
-      - image: proxyco/semantic-release:v3
-
-commands:
-  release:
-    description: Trigger the semantic release workflow
-    parameters:
-      tag_format:
-        type: string
-        default: ""
-        description: Sets the '--tag-format' flag for semantic-release, omit to use the default.
-      config_file:
-        type: string
-        default: ""
-        description: Provide a different configuration file
-      slack_webhook:
-        type: env_var_name
-        default: SLACK_WEBHOOK
-        description: Slack Webhook URL for the semantic-release-slack-bot
-      debug:
-        type: boolean
-        default: false
-        description: If "true" will provide more verbose output
-    steps:
-      - run:
-          name: Add Github to known_hosts
-          command: |
-            # https://help.github.com/en/github/authenticating-to-github/githubs-ssh-key-fingerprints
-            vcs_provider="github.com"
-
-            if [[ -z "${GH_SSH_FINGERPRINT}" ]]; then
-              echo "GH_SSH_FINGERPRINT is required!"
-              exit 1
-            fi
-
-            # check to see if Github already exists in known_hosts
-            if ! ssh-keygen -F "${vcs_provider}" 2>/dev/null; then
-              echo "Github not present in known_hosts, adding..."
-              # create the ssh directory in $HOME
-              mkdir -p ~/.ssh
-
-              # get the Github.com ssh key
-              ssh-keyscan "${vcs_provider}" 2>/dev/null > gh_key
-
-              # generate the fingerprint
-              ssh-keygen -lf gh_key | cut -d ' ' -f 2 > gen_fingerprint
-
-              <<# parameters.debug >>
-              echo "Contents of gen_fingerprint:"
-              cat gen_fingerprint
-              <</ parameters.debug >>
-
-              # verify that the Github SSH key exists in gen_fingerprint
-              if ! grep -Fx "${GH_SSH_FINGERPRINT}" gen_fingerprint 1>/dev/null; then
-                echo "Fingerprint not found!"
-              fi
-
-              # add key to known_hosts
-              cat gh_key >> ~/.ssh/known_hosts
-            fi
-      - run:
-          name: Trigger a Semantic Release
-          command: |
-            declare -a options
-
-            if [[ -n "<< parameters.tag_format >>" ]]; then
-              options+=("--tag-format" '<< parameters.tag_format >>')
-            fi
-
-            if [[ -n "<< parameters.config_file >>" ]]; then
-              filename="<< parameters.config_file >>"
-              extension="${filename##*.}"
-              ln -sf "<< parameters.config_file >>" ".releaserc.${extension}"
-            fi
-
-            if [[ -n "${<< parameters.slack_webhook >>}" ]]; then
-              export SLACK_WEBHOOK="${<< parameters.slack_webhook >>}"
-            else
-              echo "SLACK_WEBHOOK is NOT set, no slack notifications will be sent."
-            fi
-
-            semantic-release <<# parameters.debug >> --debug <</ parameters.debug >> "${options[@]}"
-
+orbs:
+  node: circleci/node@4.5
 jobs:
   release:
-    executor: semantic-release
-    parameters:
-      tag_format:
-        type: string
-        default: ""
-        description: Sets the '--tag-format' flag for semantic-release, omit to use the default.
-      config_file:
-        type: string
-        default: ""
-        description: Provide a different configuration file
-      slack_webhook:
-        type: env_var_name
-        default: SLACK_WEBHOOK
-        description: Slack Webhook URL for the semantic-release-slack-bot
-      attach_project:
-        type: boolean
-        default: false
-        description: If "true" will run "attach_workspace" at "~/project"
-      debug:
-        type: boolean
-        default: false
-        description: If "true" will provide more verbose output
+    executor: node/default
     steps:
-      - when:
-          condition: <<parameters.attach_project>>
-          steps:
-            - attach_workspace:
-                at: "~/project"
-      - unless:
-          condition: <<parameters.attach_project>>
-          steps:
-            - checkout
+      - checkout
+      - node/install-packages # Install and automatically cache packages
+      # Run optional required steps before releasing
+      # - run: npm run build-script
+        
+     
+      - run: npm run semantic-release
+
+workflows:
+  test_and_release:
+    # Run the test jobs first, then the release only when all the test jobs are successful
+    jobs:
+      - node/test:
+          matrix:
+            parameters:
+              version:
+                - 16.1.0
+                - 14.17.0
       - release:
-          tag_format: "<< parameters.tag_format >>"
-          config_file: "<< parameters.config_file >>"
-          slack_webhook: "<< parameters.slack_webhook >>"
-          debug: "<< parameters.debug >>"
+          requires:
+            - node/test 
+publish_changelog:
+        description: |
+            By default, if your project is not setup to use semantic-release, this step is skipped
+
+            If the stage is not prod, then the changelog will only sent to stdout.
+
+            Finds the latest release git tag and publishes a changelog to the coresponding GitHub release. Generally make sure this runs _after_ bump_version command unless you know otherwise.
+        parameters:
+            if2:
+                default: '[ "$SEMANTIC_RELEASE_SUPPORT" ]'
+                description: |
+                    Whether or not to run the step. Defaults to false if project not supporting semantic-release.
+
+                    To learn about or refresh on bash-if:
+
+                      - https://www.tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
+                      - https://linuxacademy.com/blog/linux/conditions-in-bash-scripting-if-statements/
+                type: string
+        steps:
+            - run:
+                command: |
+                    if <<parameters.if2>>; then
+                      true # continue step
+                    else
+                      skip-step "condition not met"
+                    fi
+
+                    if [ "$CIRCLE_BRANCH_STAGE" = "PROD" ]; then
+                      _ARGS="--post"
+                    else
+                      log-skipping '
+                        I do not publish changelogs on development releases.
+                        I will however do a dry run so you can see what the changelog would presently look like.
+                      '
+                    fi
+
+                    semantic-release changelog $_ARGS
+                name: '(prod only) semantic-release: publish changelog'
