@@ -1,6 +1,6 @@
  {
   "name": "circleci",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "The project has a simple Java project structure with the following packages (in **src/main/java**)",
   "main": "commitlint.config.js",
   "release": {
