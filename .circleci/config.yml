@@ -1,226 +1,130 @@
 # This code is licensed from CircleCI to the user under the MIT license.
 # See here for details: https://circleci.com/developer/orbs/licensing
 version: 2.1
-description: |
-    This orb's commands all assume that `setup` from dialogue/base has been run prior.
 
-    This orb models the concept of a release for projects and is designed to sit at the heart of your ci-cd workflow: after checks/builds/tests but before deploys/publishes. A release does not model deploying applications or publishing packages but rather a single release may map to one or more of those.
+description: Use Semantic Release in your project
 
-    This orb is stage aware (based dialogue/base env vars). The things it can do are:
+executors:
+  semantic-release:
+    docker:
+      - image: proxyco/semantic-release:v3
 
-      if commit type is not chore or test (configurable):
-        if stage is prod (configurable):
-          - version management: bump project version (including git commit and tag) based on semver
-          - changelog management: format and publish changelogs
-
-        Always:
-          - notification management: post to a stage-respective slack channel
-
-    Currently this orb requires that your project be setup to support semantic-release (https://github.com/relekang/python-semantic-release) to get the version/changelog management features. To do so your project must:
-
-        1. have TOML configuration in a root setup.cfg file, for example:
-
-            [semantic_release]
-            version_variable = pyproject.toml:version
-            upload_to_pypi = False
-
-        2. have a version identifier in source code as pointed to by said config file
-        3. have a git tag (with v-prefix) corresponding to the current version (for new projects, manually tag e.g. v0.0.1 or whatever)
-
-    This is not ideal because it assumes a python project. Therefore supporting semantic-release is optional by default (configurable if param). Project not supporting semantic-release can still benefit from the slack notification, and their workflow becomes future-ready for a version of this orb that is more flexible.
-orbs:
-    base: dialogue/base@1.11.0
-    slack: dialogue/slack@1.3.0
-    utils: dialogue/utils@3.6.0
 commands:
-    bump_version:
-        description: |
-            By default, if your project is not setup to use semantic-release, this step is skipped
+  release:
+    description: Trigger the semantic release workflow
+    parameters:
+      tag_format:
+        type: string
+        default: ""
+        description: Sets the '--tag-format' flag for semantic-release, omit to use the default.
+      config_file:
+        type: string
+        default: ""
+        description: Provide a different configuration file
+      slack_webhook:
+        type: env_var_name
+        default: SLACK_WEBHOOK
+        description: Slack Webhook URL for the semantic-release-slack-bot
+      debug:
+        type: boolean
+        default: false
+        description: If "true" will provide more verbose output
+    steps:
+      - run:
+          name: Add Github to known_hosts
+          command: |
+            # https://help.github.com/en/github/authenticating-to-github/githubs-ssh-key-fingerprints
+            vcs_provider="github.com"
 
-            If the stage is not prod then after the new version is evaluated it is just sent to stdout.
+            if [[ -z "${GH_SSH_FINGERPRINT}" ]]; then
+              echo "GH_SSH_FINGERPRINT is required!"
+              exit 1
+            fi
 
-            The commits since last release are evaluated and a determination is made about what the new semantic version will be, if any (could be no commits since last, all chore-type commits, etc.). If a new version is present, then:
+            # check to see if Github already exists in known_hosts
+            if ! ssh-keygen -F "${vcs_provider}" 2>/dev/null; then
+              echo "Github not present in known_hosts, adding..."
+              # create the ssh directory in $HOME
+              mkdir -p ~/.ssh
 
-              1. The version data in source code is updated
-              2. The change is committed
-              3. The commit is tagged with that version
-              4. The commit and tag are pushed back to the origin
-        parameters:
-            if2:
-                default: '[ "$SEMANTIC_RELEASE_SUPPORT" ]'
-                description: |
-                    Whether or not to run the step. Defaults to false if project not supporting semantic-release.
+              # get the Github.com ssh key
+              ssh-keyscan "${vcs_provider}" 2>/dev/null > gh_key
 
-                    To learn about or refresh on bash-if:
+              # generate the fingerprint
+              ssh-keygen -lf gh_key | cut -d ' ' -f 2 > gen_fingerprint
 
-                      - https://www.tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
-                      - https://linuxacademy.com/blog/linux/conditions-in-bash-scripting-if-statements/
-                type: string
-        steps:
-            - run:
-                command: |
-                    if <<parameters.if2>>; then
-                      true # continue step
-                    else
-                      skip-step "condition not met"
-                    fi
+              <<# parameters.debug >>
+              echo "Contents of gen_fingerprint:"
+              cat gen_fingerprint
+              <</ parameters.debug >>
 
-                    if [ "$CIRCLE_BRANCH_STAGE" != "PROD" ]; then
-                      log-skipping '
-                        I do not git tag development releases.
-                        I will however do a dry run so you can see what the next version __would__ be.
-                      '
-                      _ARGS="--noop"
-                    fi
+              # verify that the Github SSH key exists in gen_fingerprint
+              if ! grep -Fx "${GH_SSH_FINGERPRINT}" gen_fingerprint 1>/dev/null; then
+                echo "Fingerprint not found!"
+              fi
 
-                    semantic-release version $_ARGS
+              # add key to known_hosts
+              cat gh_key >> ~/.ssh/known_hosts
+            fi
+      - run:
+          name: Trigger a Semantic Release
+          command: |
+            declare -a options
 
-                    if [ "$CIRCLE_BRANCH_STAGE" = "PROD" ]; then
-                      git push --follow-tags
-                    fi
-                name: '(prod only) semantic-release: bump version, commit it, tag it'
-    detect_semantic_release_support:
-        description: |
-            Detects project support for semantic-release and exports its findings as either NO_SEMANTIC_RELEASE_SUPPORT or SEMANTIC_RELEASE_SUPPORT.
+            if [[ -n "<< parameters.tag_format >>" ]]; then
+              options+=("--tag-format" '<< parameters.tag_format >>')
+            fi
 
-            Refer to top-level orb description for how to make a project support semantic-release.
-        steps:
-            - run:
-                command: |
-                    semantic-release version --noop 1> /dev/null 2> /tmp/stderr || {
-                      _CODE=$?
-                      _STDERR=$(cat /tmp/stderr)
-                    }
+            if [[ -n "<< parameters.config_file >>" ]]; then
+              filename="<< parameters.config_file >>"
+              extension="${filename##*.}"
+              ln -sf "<< parameters.config_file >>" ".releaserc.${extension}"
+            fi
 
-                    if [ "$_STDERR" ]; then
-                      if echo "$_STDERR" | pcregrep 'semantic-release: command not found' > /dev/null; then
-                        log "semantic-release tool is not installed"
-                        cci-export NO_SEMANTIC_RELEASE_SUPPORT true
-                      elif echo "$_STDERR" | pcregrep 'version_variable' > /dev/null; then
-                        log "project does not have semantic-release configured in config.cfg or pyproject.toml"
-                        cci-export NO_SEMANTIC_RELEASE_SUPPORT true
-                      elif echo "$_STDERR" | pcregrep 'exit code\(128\)' > /dev/null; then
-                        log "project does not have a git tag mapping to the version identifier semantic-release is configured to look at"
-                        log-detail "
-                          this usually happens when a project is brand new and lacks any git tags
-                          semantic-release does not support this; make your first tag manually
-                          will treat this as project not supporting semantic-release rather than a hard error blocking your ci-cd
-                        "
-                        cci-export NO_SEMANTIC_RELEASE_SUPPORT true
-                      else
-                        echo $_STDERR
-                        exit $_CODE
-                      fi
-                    else
-                      cci-export SEMANTIC_RELEASE_SUPPORT true
-                    fi
-                name: Detect semantic-release support
-    publish_changelog:
-        description: |
-            By default, if your project is not setup to use semantic-release, this step is skipped
+            if [[ -n "${<< parameters.slack_webhook >>}" ]]; then
+              export SLACK_WEBHOOK="${<< parameters.slack_webhook >>}"
+            else
+              echo "SLACK_WEBHOOK is NOT set, no slack notifications will be sent."
+            fi
 
-            If the stage is not prod, then the changelog will only sent to stdout.
+            semantic-release <<# parameters.debug >> --debug <</ parameters.debug >> "${options[@]}"
 
-            Finds the latest release git tag and publishes a changelog to the coresponding GitHub release. Generally make sure this runs _after_ bump_version command unless you know otherwise.
-        parameters:
-            if2:
-                default: '[ "$SEMANTIC_RELEASE_SUPPORT" ]'
-                description: |
-                    Whether or not to run the step. Defaults to false if project not supporting semantic-release.
-
-                    To learn about or refresh on bash-if:
-
-                      - https://www.tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
-                      - https://linuxacademy.com/blog/linux/conditions-in-bash-scripting-if-statements/
-                type: string
-        steps:
-            - run:
-                command: |
-                    if <<parameters.if2>>; then
-                      true # continue step
-                    else
-                      skip-step "condition not met"
-                    fi
-
-                    if [ "$CIRCLE_BRANCH_STAGE" = "PROD" ]; then
-                      _ARGS="--post"
-                    else
-                      log-skipping '
-                        I do not publish changelogs on development releases.
-                        I will however do a dry run so you can see what the changelog would presently look like.
-                      '
-                    fi
-
-                    semantic-release changelog $_ARGS
-                name: '(prod only) semantic-release: publish changelog'
-    release:
-        description: |
-            Central command of this orb doing the following:
-
-              If commit is not of type chore or test (configurable), then:
-                If stage is prod (configurable), then:
-                  - bump the version
-                  - publish the changelog
-                - send slack message about the release
-
-              If you pass a custom bump_version command, then you are responsible for the only-on-prod condition.
-
-              Refer to bump_version and publish_changelog command docs for their details.
-        parameters:
-            bump_version:
-                default: ""
-                description: |
-                    Custom command for bump version logic
-                type: string
-            extend_slack_text:
-                default: printf ''
-                description: |
-                    A bash function to generate text (anything sent to stdout) that will be appended to sent slack message text.
-                type: string
-            if:
-                default: '[ ! "$CIRCLE_BRANCH_STAGE" = "PROD" ] || [[ ! "$CIRCLE_COMMIT_MSG_SUBJECT" =~ ^(chore|test) ]]'
-                type: string
-        steps:
-            - utils/continue_when:
-                condition: <<parameters.if>>
-            - detect_semantic_release_support
-            - when:
-                condition: <<parameters.bump_version>>
-                steps:
-                    - run:
-                        command: <<parameters.bump_version>>
-                        name: Bump version
-            - unless:
-                condition: <<parameters.bump_version>>
-                steps:
-                    - bump_version
-            - publish_changelog
-            - slack/commit:
-                extend_text: <<parameters.extend_slack_text>>
-                key: release
 jobs:
-    release:
-        description: |
-            Refer to command version for docs. Generally, for most use-cases, this job should be all you need.
-        executor: base/launchpad
-        parameters:
-            bump_version:
-                default: ""
-                description: |
-                    Custom command for bump version logic
-                type: string
-            extend_slack_text:
-                default: printf ''
-                description: |
-                    A bash function to generate text (anything sent to stdout) that will be appended to sent slack message text.
-                type: string
-            if:
-                default: '[ ! "$CIRCLE_BRANCH_STAGE" = "PROD" ] || [[ ! "$CIRCLE_COMMIT_MSG_SUBJECT" =~ ^(chore|test) ]]'
-                type: string
-        steps:
-            - base/setup
-            - release:
-                bump_version: <<parameters.bump_version>>
-                extend_slack_text: <<parameters.extend_slack_text>>
-                if: <<parameters.if>>
-
+  release:
+    executor: semantic-release
+    parameters:
+      tag_format:
+        type: string
+        default: ""
+        description: Sets the '--tag-format' flag for semantic-release, omit to use the default.
+      config_file:
+        type: string
+        default: ""
+        description: Provide a different configuration file
+      slack_webhook:
+        type: env_var_name
+        default: SLACK_WEBHOOK
+        description: Slack Webhook URL for the semantic-release-slack-bot
+      attach_project:
+        type: boolean
+        default: false
+        description: If "true" will run "attach_workspace" at "~/project"
+      debug:
+        type: boolean
+        default: false
+        description: If "true" will provide more verbose output
+    steps:
+      - when:
+          condition: <<parameters.attach_project>>
+          steps:
+            - attach_workspace:
+                at: "~/project"
+      - unless:
+          condition: <<parameters.attach_project>>
+          steps:
+            - checkout
+      - release:
+          tag_format: "<< parameters.tag_format >>"
+          config_file: "<< parameters.config_file >>"
+          slack_webhook: "<< parameters.slack_webhook >>"
+          debug: "<< parameters.debug >>"
