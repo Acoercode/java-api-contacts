@@ -9,8 +9,7 @@ jobs:
       - node/install-packages # Install and automatically cache packages
       # Run optional required steps before releasing
       # - run: npm run build-script
-        
-     
+      - run: npm install -g npm       
       - run: npm run semantic-release
 
 workflows:
@@ -26,41 +25,3 @@ workflows:
       - release:
           requires:
             - node/test 
-publish_changelog:
-        description: |
-            By default, if your project is not setup to use semantic-release, this step is skipped
-
-            If the stage is not prod, then the changelog will only sent to stdout.
-
-            Finds the latest release git tag and publishes a changelog to the coresponding GitHub release. Generally make sure this runs _after_ bump_version command unless you know otherwise.
-        parameters:
-            if2:
-                default: '[ "$SEMANTIC_RELEASE_SUPPORT" ]'
-                description: |
-                    Whether or not to run the step. Defaults to false if project not supporting semantic-release.
-
-                    To learn about or refresh on bash-if:
-
-                      - https://www.tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
-                      - https://linuxacademy.com/blog/linux/conditions-in-bash-scripting-if-statements/
-                type: string
-        steps:
-            - run:
-                command: |
-                    if <<parameters.if2>>; then
-                      true # continue step
-                    else
-                      skip-step "condition not met"
-                    fi
-
-                    if [ "$CIRCLE_BRANCH_STAGE" = "PROD" ]; then
-                      _ARGS="--post"
-                    else
-                      log-skipping '
-                        I do not publish changelogs on development releases.
-                        I will however do a dry run so you can see what the changelog would presently look like.
-                      '
-                    fi
-
-                    semantic-release changelog $_ARGS
-                name: '(prod only) semantic-release: publish changelog'
