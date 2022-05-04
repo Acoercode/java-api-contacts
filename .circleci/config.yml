@@ -1,7 +1,6 @@
 version: 2.1
 orbs:
   node: circleci/node@4.5
-  commitlint: conventional-changelog/commitlint@1.0.0
 jobs:
   release:
     executor: node/default
@@ -24,5 +23,4 @@ workflows:
                 - 14.17.0
       - release:
           requires:
-            - node/test    
-       
+            - node/test 
