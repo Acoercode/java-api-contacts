@@ -10,8 +10,8 @@ jobs:
       # replace with your preferred image
       - image: cimg/base:stable
     steps:
-      - semantic-release/create-minimal-config-github
+      - release/bump_version
 workflows:
-    example-workflow:
-      jobs:
-        - release/release
+  example-workflow:
+    jobs:
+      - example-job
