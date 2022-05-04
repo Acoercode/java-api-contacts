@@ -29,7 +29,4 @@ workflows:
          requires:  
            - release
          config-path: ./commitlint.config.js 
-         configs: commitlint/config-conventional 
-         max-count: 10 
-         node-version: '16.1.0' 
-         target-branch: test/semantic-release 
+         
