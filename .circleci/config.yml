@@ -1,59 +1,15 @@
-version: 2
+version: 2.1
+orbs:
+  node: circleci/node@4.5
+  semantic-release: trustedshops-public/semantic-release@2.0.0
 jobs:
-  build:
+  example-job:
     docker:
-      # specify the version you desire here
-      - image: circleci/openjdk:8-jdk
-
-    working_directory: ~/repo
-
-    environment:
-      # Customize the JVM maximum heap limit
-      JVM_OPTS: -Xmx3200m
-      TERM: dumb
-
+      # replace with your preferred image
+      - image: cimg/base:stable
     steps:
-      - checkout
-
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "build.gradle" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-
-      - run: gradle dependencies
-
-      - save_cache:
-          paths:
-            - ~/.gradle
-          key: v1-dependencies-{{ checksum "build.gradle" }}
-
-      - persist_to_workspace:
-          root: .
-          paths:
-            - gradle
-
-  sanityTests:
-    docker:
-      - image: circleci/openjdk:8-jdk
-      - image: swaggerapi/petstore3:unstable
-    environment:
-      ENV: circle
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - attach_workspace:
-          at: ~/repo
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "build.gradle" }}
-      - run:
-          name: Sanity Cucumber Tests
-          command: |
-            gradle sanityTest
-          when: always
-      - store_test_results:
-          path: reports
-      - store_artifacts:
-          path: reports
+      - semantic-release/create-minimal-config-github
+workflows:
+  example-workflow:
+    jobs:
+      - example-job
