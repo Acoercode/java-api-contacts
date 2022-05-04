@@ -8,7 +8,8 @@ jobs:
       # replace with your preferred image
       - image: cimg/base:stable
     steps:
-      - semantic-release/create-changelog-config-github
+      - semantic-release/create-minimal-config-github:
+          tag-format: \${version} (string) 
 workflows:
   example-workflow:
     jobs:
