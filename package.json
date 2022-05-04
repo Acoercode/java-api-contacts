@@ -1,6 +1,6 @@
 {
   "name": "circleci",
-  "version": "1.1.0",
+  "version": "1.4.0",
   "description": "The project has a simple Java project structure with the following packages (in **src/main/java**)",
   "main": "commitlint.config.js",
   "release": {
@@ -37,23 +37,8 @@
   "author": "Acoer",
   "publishConfig": {
     "access": "public"
-  },
+  }
   
-    "plugins": [
-      "@semantic-release/commit-analyzer",
-      "@semantic-release/release-notes-generator",
-      [
-        "@semantic-release/changelog",
-        {
-          "changelogFile": "CHANGELOG.md"
-        }
-      ],
-      [
-        "@semantic-release/git",
-        {
-          "assets": ["CHANGELOG.md"]
-        }
-      ]
-    ]
+   
    
 }
