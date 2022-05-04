@@ -1,15 +1,28 @@
 version: 2.1
 orbs:
   node: circleci/node@4.5
-  semantic-release: trustedshops-public/semantic-release@2.0.0
+  commitlint: conventional-changelog/commitlint@1.0.0
 jobs:
-  example-job:
-    docker:
-      # replace with your preferred image
-      - image: cimg/base:stable
+  release:
+    executor: node/default
     steps:
-      - semantic-release/create-minimal-config-github
+      - checkout
+      - node/install-packages # Install and automatically cache packages
+      # Run optional required steps before releasing
+      # - run: npm run build-script
+      - run: npm run semantic-release
+
 workflows:
-  example-workflow:
+  test_and_release:
+    # Run the test jobs first, then the release only when all the test jobs are successful
     jobs:
-      - example-job
+      - node/test:
+          matrix:
+            parameters:
+              version:
+                - 16.1.0
+                - 14.17.0
+      - release:
+          requires:
+            - node/test    
+       
