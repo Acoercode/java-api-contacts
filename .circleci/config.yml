@@ -30,5 +30,6 @@ workflows:
           requires:
             - release
           attach_project: false 
-          debug: true    
+          debug: true
+             
        
