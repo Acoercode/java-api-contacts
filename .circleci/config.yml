@@ -3,16 +3,14 @@ orbs:
   node: circleci/node@4.5
   semantic-release: trustedshops-public/semantic-release@2.0.0
 jobs:
-  release:
-    executor: node/default
+  example-job:
+    docker:
+      # replace with your preferred image
+      - image: cimg/base:stable
     steps:
-      - checkout
-      - node/install-packages # Install and automatically cache packages
-      # Run optional required steps before releasing
-      # - run: npm run build-script
-      - run: npm run semantic-release
-
+      - semantic-release/install
 workflows:
-    example-workflow:
-      jobs:
-        - semantic-release/with-changelog-github-config
+  example-workflow:
+    jobs:
+      - example-job
+ 
