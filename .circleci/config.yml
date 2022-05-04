@@ -2,6 +2,7 @@ version: 2.1
 orbs:
   node: circleci/node@4.5
   commitlint: conventional-changelog/commitlint@1.0.0
+  semantic-release: proxyco/semantic-release@4.0.0
 jobs:
   release:
     executor: node/default
@@ -13,8 +14,19 @@ jobs:
       - run: npm run semantic-release
 
 workflows:
-    example-workflow:
-      jobs:
-        - commitlint/lint:
-            config-path: ./commitlint.config.js 
-            configs: "@commitlint/config-conventional"        
+  test_and_release:
+    # Run the test jobs first, then the release only when all the test jobs are successful
+    jobs:
+      - node/test:
+          matrix:
+            parameters:
+              version:
+                - 16.1.0
+                - 14.17.0
+      - release:
+          requires:
+            - node/test 
+      - semantic-release/release:
+          requires:
+            - release   
+       
