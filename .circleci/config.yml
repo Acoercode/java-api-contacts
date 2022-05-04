@@ -1,11 +1,28 @@
-version: '2.1'
+version: 2.1
 orbs:
-  version-release: kohirens/version-release@1.1.0
+  node: circleci/node@4.5
+  commitlint: conventional-changelog/commitlint@1.0.0
+jobs:
+  release:
+    executor: node/default
+    steps:
+      - checkout
+      - node/install-packages # Install and automatically cache packages
+      # Run optional required steps before releasing
+      # - run: npm run build-script
+      - run: npm run semantic-release
+
 workflows:
-    example-workflow:
-      jobs:
-        - version-release/tag-and-release:
-            changelogFile: ./CHANGELOG.md 
-            ghToken: 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 
-            branch: test/semantic-release           
-          
+  test_and_release:
+    # Run the test jobs first, then the release only when all the test jobs are successful
+    jobs:
+      - node/test:
+          matrix:
+            parameters:
+              version:
+                - 16.1.0
+                - 14.17.0
+      - release:
+          requires:
+            - node/test    
+       
