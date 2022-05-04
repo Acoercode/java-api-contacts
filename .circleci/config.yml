@@ -4,7 +4,8 @@ orbs:
 workflows:
     example-workflow:
       jobs:
-        - version-release/tag-and-release:            
+        - version-release/tag-and-release:
+            changelogFile: ./CHANGELOG.md 
             ghToken: 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 
             branch: test/semantic-release           
           
