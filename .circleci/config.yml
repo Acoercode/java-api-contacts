@@ -1,8 +1,8 @@
 version: '2.1'
 orbs:
-  release: dialogue/release@2.5.0
+  semantic-release: oandacorp/semantic-release@2.0.0
 workflows:
     example-workflow:
       jobs:
-        - release/release          
+        - semantic-release/node          
           
