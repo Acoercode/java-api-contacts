@@ -26,6 +26,8 @@ workflows:
           requires:
             - node/test    
       - commitlint/lint:
+         requires:  
+           - release
          config-path: ./commitlint.config.js 
          configs: commitlint/config-conventional 
          max-count: 10 
