@@ -15,5 +15,6 @@ jobs:
 workflows:
     example-workflow:
       jobs:
-        - commitlint/lint    
-       
+        - commitlint/lint:
+            config-path: ./commitlint.config.js 
+            configs: "@commitlint/config-conventional"        
