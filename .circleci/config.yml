@@ -28,6 +28,5 @@ workflows:
       - commitlint/lint:
             requires:
             - release
-            config-path: ./commitlint.config.js 
-            target-branch: test/semantic-release 
+            
 
