@@ -10,7 +10,7 @@ jobs:
       # replace with your preferred image
       - image: cimg/base:stable
     steps:
-      - release/bump_version
+      - semantic-release/execute
 workflows:
   example-workflow:
     jobs:
