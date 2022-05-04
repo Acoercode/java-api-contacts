@@ -1,7 +1,7 @@
 version: 2.1
 orbs:
   node: circleci/node@4.5
-  commitlint: conventional-changelog/commitlint@1.0.0
+  semantic-release: trustedshops-public/semantic-release@2.0.0
 jobs:
   release:
     executor: node/default
@@ -13,20 +13,6 @@ jobs:
       - run: npm run semantic-release
 
 workflows:
-  test_and_release:
-    # Run the test jobs first, then the release only when all the test jobs are successful
-    jobs:
-      - node/test:
-          matrix:
-            parameters:
-              version:
-                - 16.1.0
-                - 14.17.0       
-      - release:
-          requires:
-            - node/test
-      - commitlint/lint:
-            requires:
-            - release         
-            target-branch: test/semantic-release 
-
+    example-workflow:
+      jobs:
+        - semantic-release/with-changelog-github-config
