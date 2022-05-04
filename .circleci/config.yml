@@ -2,6 +2,7 @@ version: 2.1
 orbs:
   node: circleci/node@4.5
   semantic-release: trustedshops-public/semantic-release@2.0.0
+  commitlint: conventional-changelog/commitlint@1.0.0
 jobs:
   example-job:
     docker:
@@ -10,6 +11,6 @@ jobs:
     steps:
       - semantic-release/create-minimal-config-github
 workflows:
-  example-workflow:
-    jobs:
-      - example-job
+    example-workflow:
+      jobs:
+        - commitlint/lint
