@@ -2,13 +2,14 @@ version: 2.1
 orbs:
   node: circleci/node@4.5
   semantic-release: trustedshops-public/semantic-release@2.0.0
+  release: dialogue/release@2.5.0
 jobs:
   example-job:
     docker:
       # replace with your preferred image
       - image: cimg/base:stable
     steps:
-      - semantic-release/create-minimal-config-github
+      - release/release
 workflows:
   example-workflow:
     jobs:
