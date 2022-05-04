@@ -27,6 +27,6 @@ workflows:
             - node/test
       - commitlint/lint:
             requires:
-            - release
-            
+            - release         
+            target-branch: test/semantic-release 
 
