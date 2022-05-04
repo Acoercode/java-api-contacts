@@ -1,8 +1,11 @@
-version: '2.1'
+version: 2
 orbs:
-  semantic-release: oandacorp/semantic-release@2.0.0
+  version-release: kohirens/version-release@1.1.0
 workflows:
     example-workflow:
       jobs:
-        - semantic-release/node          
+        - version-release/tag-and-release:
+            changelogFile: ./CHANGELOG.md 
+            ghToken: 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 
+            branch: test/semantic-release           
           
