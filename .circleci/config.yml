@@ -1,17 +1,59 @@
-version: 2.1
-orbs:
-  node: circleci/node@4.5
-  semantic-release: oandacorp/semantic-release@2.0.0
-  commitlint: conventional-changelog/commitlint@1.0.0
-  release: dialogue/release@2.5.0
+version: 2
 jobs:
-  example-job:
+  build:
     docker:
-      # replace with your preferred image
-      - image: cimg/base:stable
+      # specify the version you desire here
+      - image: circleci/openjdk:8-jdk
+
+    working_directory: ~/repo
+
+    environment:
+      # Customize the JVM maximum heap limit
+      JVM_OPTS: -Xmx3200m
+      TERM: dumb
+
     steps:
-      - semantic-release/execute
-workflows:
-    example-workflow:
-      jobs:
-        - semantic-release/node
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "build.gradle" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run: gradle dependencies
+
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: v1-dependencies-{{ checksum "build.gradle" }}
+
+      - persist_to_workspace:
+          root: .
+          paths:
+            - gradle
+
+  sanityTests:
+    docker:
+      - image: circleci/openjdk:8-jdk
+      - image: swaggerapi/petstore3:unstable
+    environment:
+      ENV: circle
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/repo
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "build.gradle" }}
+      - run:
+          name: Sanity Cucumber Tests
+          command: |
+            gradle sanityTest
+          when: always
+      - store_test_results:
+          path: reports
+      - store_artifacts:
+          path: reports
