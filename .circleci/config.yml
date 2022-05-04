@@ -28,5 +28,7 @@ workflows:
             - node/test 
       - semantic-release/release:
           requires:
-            - release   
+            - release
+          attach_project: false 
+          debug: true    
        
