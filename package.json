@@ -1,6 +1,6 @@
 {
   "name": "circleci",
-  "version": "1.11.1",
+  "version": "1.11.2",
   "description": "",
   "main": "commitlint.config.js",
   "release": {
