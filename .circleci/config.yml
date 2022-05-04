@@ -8,9 +8,8 @@ jobs:
       # replace with your preferred image
       - image: cimg/base:stable
     steps:
-      - semantic-release/install
+      - semantic-release/create-changelog-config-github
 workflows:
   example-workflow:
     jobs:
       - example-job
- 
