@@ -20,10 +20,14 @@ jobs:
 
 workflows:
   run-npm-command:
-    jobs:
-       
-      - build:        
-         executor: node/default
-         steps:     
-      - npm run build
+    jobs:       
+      - build
+      - push:
+          requires:
+            - build
+      - publish:
+          requires:
+            - push  
+ 
+
       
