@@ -5,6 +5,7 @@ jobs:
   build:
     executor: node/default
     steps:
+      - checkout
       - node/install-packages      
       - run: npm run release
 
