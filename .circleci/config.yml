@@ -24,7 +24,13 @@ jobs:
 workflows:
   run-npm-command:
     jobs:       
-      - baseci/publish-artifacts-to-github-releases  
+      - build
+      - push:
+          requires:
+            - build
+      - publish:
+          requires:
+            - push  
  
 
       
