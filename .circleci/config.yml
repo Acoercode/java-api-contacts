@@ -4,7 +4,8 @@ orbs:
 jobs:
   build:
     executor: node/default
-    steps:     
+    steps:
+      - node/install-packages      
       - run: npm run release
 
   push:
