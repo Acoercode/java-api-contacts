@@ -30,7 +30,9 @@
   "scripts": {
     "test": "mocha",
     "semantic-release": "semantic-release",
-    "release": "standard-version"
+    "release": "standard-version",
+    "pushToGit":"git push --follow-tags origin test/semantic-release",
+    "publish": "npm publish"
   },
   "repository": {
     "type": "git",

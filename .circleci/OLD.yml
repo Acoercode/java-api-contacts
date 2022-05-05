@@ -1,0 +1,14 @@
+version: '2.1'
+orbs:
+  node: circleci/node@5.0.2
+workflows:
+  run-npm-command:
+    jobs:
+      - node/run:
+          npm-run: release 
+      - node/run:
+          npm-run: pushToGit
+      - node/run:
+          npm-run: publish
+
+
