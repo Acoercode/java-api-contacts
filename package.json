@@ -1,6 +1,6 @@
 {
   "name": "circleci",
-  "version": "1.15.5",
+  "version": "1.16.0",
   "description": "",
   "main": "commitlint.config.js",
   "release": {
@@ -31,7 +31,7 @@
     "test": "mocha",
     "semantic-release": "semantic-release",
     "release": "standard-version",
-    "pushToGit":"git push --follow-tags origin test/semantic-release",
+    "pushToGit": "git push --follow-tags origin test/semantic-release",
     "publish": "npm publish"
   },
   "repository": {
