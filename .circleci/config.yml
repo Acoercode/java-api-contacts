@@ -12,7 +12,7 @@ jobs:
       - maven-build/maven_command:
           command: mvn -s settings.xml clean deploy 
           with_docker: false 
-          branch_filter: test/semantic-release 
+           
 workflows:
   example-workflow:
     jobs:
