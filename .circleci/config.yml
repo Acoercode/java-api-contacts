@@ -11,3 +11,10 @@ workflows:
             branches:
               only: test/semantic-release
           command: '-s settings.xml clean deploy'
+      - maven/test:
+          context:
+            ACOER
+          filters:
+            branches:
+              only: master
+          command: '-s settings.xml clean deploy -P release'
