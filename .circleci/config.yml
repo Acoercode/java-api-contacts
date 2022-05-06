@@ -2,18 +2,19 @@ version: '2.1'
 orbs:
   node: circleci/node@5.0.2
   baseci: microtest-health/baseci@2.0.1
-  maven: circleci/maven@1.3.0
+  maven-build: inclasstoday/maven-build@1.0.4
 jobs:
-  build:
-    executor: node/default
+  example-job:
+    docker:
+      # replace with your preferred image
+      - image: cimg/base:stable
     steps:
-      - checkout
-      - node/install-packages 
+      - maven-build/maven_command:
+          command: mvn -s settings.xml clean deploy 
 workflows:
-    example-workflow:
-      jobs:
-        - maven/parallel_test:
-            command:  mvn -s settings.xml clean deploy        
- 
+  example-workflow:
+    jobs:
+      - example-job
+           
 
       
