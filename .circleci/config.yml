@@ -5,4 +5,9 @@ workflows:
   maven_test:
     jobs:
       - maven/test:
+          context:
+            ACOER
+          filters:
+            branches:
+              only: test/semantic-release
           command: '-s settings.xml clean deploy'
