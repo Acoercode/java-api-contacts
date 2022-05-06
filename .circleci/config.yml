@@ -9,7 +9,7 @@ workflows:
             ACOER
           filters:
             branches:
-              only: test/semantic-release
+              only: development
           command: '-s settings.xml clean deploy'
       - maven/test:
           context:
