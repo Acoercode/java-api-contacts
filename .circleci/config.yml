@@ -26,6 +26,8 @@ workflows:
       - push:
           context:
             ACOER
+          requires:
+            - build            
           filters:
             branches:
               only: master
