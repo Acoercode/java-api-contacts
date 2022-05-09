@@ -23,6 +23,14 @@ workflows:
           filters:
             branches:
               only: master
+      - push:
+          context:
+            ACOER
+          filters:
+            branches:
+              only: master
+ 
+
       - maven/test:
           context:
             ACOER             
@@ -30,6 +38,7 @@ workflows:
             branches:
               only: development
           command: '-s settings.xml clean deploy'
+
       - maven/test:
           context:
             ACOER
