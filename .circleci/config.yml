@@ -1,0 +1,52 @@
+orbs:
+  maven: circleci/maven@1.3.0
+  node: circleci/node@5.0.2
+version: 2.1
+jobs:
+  build:
+    executor: node/default
+    steps:
+      - checkout
+      - node/install-packages      
+      - run: npm run release
+
+  push:
+    executor: node/default
+    steps:     
+      - run: npm run pushToGit 
+workflows:
+  maven_test:
+    jobs:
+      - build:
+          context:
+            ACOER
+          filters:
+            branches:
+              only: master
+      - push:
+          context:
+            ACOER
+          requires:
+            - build            
+          filters:
+            branches:
+              only: master
+ 
+
+      - maven/test:
+          context:
+            ACOER             
+          filters:
+            branches:
+              only: development
+          command: '-s settings.xml clean deploy'
+
+      - maven/test:
+          context:
+            ACOER
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
+          command: '-s settings.xml clean deploy -P release'

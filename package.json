@@ -1,0 +1,45 @@
+{
+  "name": "circleci",
+  "version": "1.16.0",
+  "description": "",
+  "main": "commitlint.config.js",
+  "release": {
+    "branches": [
+      "test/semantic-release"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "dependencies": {
+    "@commitlint/cli": "^16.2.4",
+    "git-commit-msg-linter": "4.1.2",
+    "maven": "5.0.0",
+    "mocha": "^10.0.0",
+    "mvn": "3.5.0",
+    "node": "^17.7.2"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.1",
+    "husky": "7.0.4",
+    "semantic-release": "^19.0.2",
+    "standard-version": "^9.3.2"
+  },
+  "scripts": {
+    "test": "mocha",
+    "semantic-release": "semantic-release",
+    "release": "standard-version",
+    "pushToGit": "git push --follow-tags origin master",
+    "publish": "npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Acoercode/java-api-contacts.git"
+  },
+  "author": "Acoer",
+  "publishConfig": {
+    "access": "public"
+  }
+}
