@@ -34,3 +34,6 @@ build/
 
 ### Maven ###
 .mvn/
+
+#versions backup
+pom.xml.versionsBackup
